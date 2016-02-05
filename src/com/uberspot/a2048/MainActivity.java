@@ -11,6 +11,7 @@ import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.provider.Settings;
 import android.provider.Settings.SettingNotFoundException;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MotionEvent;
 import android.view.View;
@@ -23,7 +24,11 @@ import android.webkit.WebSettings.RenderPriority;
 import android.webkit.WebView;
 import android.widget.Toast;
 
+import de.cketti.library.changelog.ChangeLog;
+
 public class MainActivity extends Activity {
+
+    private static final String MAIN_ACTIVITY_TAG = "2048_MainActivity";
 
     private WebView mWebView;
     private long mLastBackPress;
@@ -56,7 +61,9 @@ public class MainActivity extends Activity {
         try {
             isOrientationEnabled = Settings.System.getInt(getContentResolver(),
                     Settings.System.ACCELEROMETER_ROTATION) == 1;
-        } catch (SettingNotFoundException e) { }
+        } catch (SettingNotFoundException e) {
+            Log.d(MAIN_ACTIVITY_TAG, "Settings could not be loaded");
+        }
 
         // If rotation isn't locked and it's a LARGE screen then add orientation changes based on sensor
         int screenLayout = getResources().getConfiguration().screenLayout
@@ -69,15 +76,19 @@ public class MainActivity extends Activity {
 
         setContentView(R.layout.activity_main);
 
+        ChangeLog cl = new ChangeLog(this);
+        if (cl.isFirstRun()) {
+            cl.getLogDialog().show();
+        }
+
         // Load webview with game
         mWebView = (WebView) findViewById(R.id.mainWebView);
         WebSettings settings = mWebView.getSettings();
-        String packageName = getPackageName();
         settings.setJavaScriptEnabled(true);
         settings.setDomStorageEnabled(true);
         settings.setDatabaseEnabled(true);
         settings.setRenderPriority(RenderPriority.HIGH);
-        settings.setDatabasePath("/data/data/" + packageName + "/databases");
+        settings.setDatabasePath(getFilesDir().getParentFile().getPath() + "/databases");
 
         // If there is a previous instance restore it in the webview
         if (savedInstanceState != null) {
